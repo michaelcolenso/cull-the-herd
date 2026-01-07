@@ -25,11 +25,11 @@ AI-powered CLI tool for batch photo criticism using Claude's vision API. Quickly
 git clone https://github.com/michaelcolenso/cull-the-herd.git
 cd cull-the-herd
 
-# Install with pip
-pip install -e .
+# Install with uv
+uv sync
 
 # Or install with dev dependencies
-pip install -e ".[dev]"
+uv sync --dev
 ```
 
 ### Set up API Key
@@ -206,31 +206,27 @@ The CLI displays an estimated cost before submitting the batch.
 git clone https://github.com/michaelcolenso/cull-the-herd.git
 cd cull-the-herd
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install with dev dependencies
-pip install -e ".[dev]"
+# Install with dev dependencies (uv creates/manages venv automatically)
+uv sync --dev
 ```
 
 ### Run Tests
 
 ```bash
-pytest
+uv run pytest
 ```
 
 ### Code Formatting
 
 ```bash
 # Format code with Black
-black src/ tests/
+uv run black src/ tests/
 
 # Lint with Ruff
-ruff check src/ tests/
+uv run ruff check src/ tests/
 
 # Type checking with mypy
-mypy src/
+uv run mypy src/
 ```
 
 ### Project Structure

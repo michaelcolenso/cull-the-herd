@@ -32,7 +32,7 @@ The tool processes folders of images using Claude's Message Batches API for cost
 - **AI API:** Anthropic Claude (Message Batches API)
 - **Image Processing:** Pillow, pillow-heif
 - **Output:** Rich (console formatting), JSON/Markdown reports
-- **Package Manager:** pip/uv
+- **Package Manager:** uv
 - **Build System:** pyproject.toml (PEP 621)
 - **Testing:** pytest (planned)
 
@@ -319,7 +319,7 @@ Follow **PEP 8** style guide with these specifics:
 - Write tests for new features
 - Update tests when changing functionality
 - Maintain test coverage above 80%
-- Run tests before committing: `pytest`
+- Run tests before committing: `uv run pytest`
 - Include both unit and integration tests
 - Mock external API calls in tests
 
