@@ -191,9 +191,7 @@ def preprocess_image(path: Path) -> dict[str, str] | None:
         return None
 
 
-def build_batch_request(
-    image_data: dict[str, str], custom_id: str, model: str
-) -> dict:
+def build_batch_request(image_data: dict[str, str], custom_id: str, model: str) -> dict:
     """Build a single batch request for the Anthropic API.
 
     Args:
@@ -277,8 +275,6 @@ def prepare_batch(
 
         logger.info(f"Prepared: {img_path.name} ({custom_id})")
 
-    logger.info(
-        f"Prepared {len(batch_requests)} requests from {len(images)} images"
-    )
+    logger.info(f"Prepared {len(batch_requests)} requests from {len(images)} images")
 
     return batch_requests, image_metadata

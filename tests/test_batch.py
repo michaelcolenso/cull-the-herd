@@ -1,8 +1,5 @@
 """Tests for batch module."""
 
-import pytest
-from photo_critic.batch import BatchClient
-
 
 def test_batch_client_init_placeholder() -> None:
     """Placeholder test for BatchClient initialization."""

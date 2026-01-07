@@ -271,7 +271,7 @@ def main(
         sys.exit(1)
 
     # Success!
-    console.print(f"\n[bold green]✓ Complete![/bold green]")
+    console.print("\n[bold green]✓ Complete![/bold green]")
 
     if format == "json":
         console.print(f"Report saved to: [cyan]{output.with_suffix('.json')}[/cyan]")

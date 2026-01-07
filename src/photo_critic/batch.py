@@ -52,8 +52,7 @@ class BatchClient:
 
         if len(requests) > 10000:
             raise ValueError(
-                f"Batch too large: {len(requests)} requests "
-                "(max 10,000 per batch)"
+                f"Batch too large: {len(requests)} requests " "(max 10,000 per batch)"
             )
 
         logger.info(f"Submitting batch with {len(requests)} requests")
@@ -193,9 +192,7 @@ class BatchClient:
             status = self.get_batch_status(batch_id)
 
             if status["processing_status"] != "ended":
-                raise ValueError(
-                    f"Batch not completed: {status['processing_status']}"
-                )
+                raise ValueError(f"Batch not completed: {status['processing_status']}")
 
             # Retrieve results
             results = []
