@@ -22,16 +22,19 @@
 ## Repository Overview
 
 ### Purpose
-This repository is in its initial setup phase. The project name "cull-the-herd" suggests a filtering, selection, or management application, but specific implementation details are yet to be established.
+**Photo Critic** - An AI-powered CLI tool that uses Claude's vision API to critique and rate photos in bulk, helping photographers quickly identify their best shots.
 
-### Current Technology Stack
-**Status:** Not yet determined
-The repository does not currently contain configuration files indicating a specific language or framework. Future updates to this document should include:
-- Primary programming language
-- Framework(s) used
-- Build tools and package managers
-- Testing frameworks
-- Deployment platforms
+The tool processes folders of images using Claude's Message Batches API for cost-effective batch analysis (50% discount), providing detailed critiques including composition, lighting, subject matter, and technical quality assessments with numerical ratings.
+
+### Technology Stack
+- **Language:** Python 3.11+
+- **CLI Framework:** Click
+- **AI API:** Anthropic Claude (Message Batches API)
+- **Image Processing:** Pillow, pillow-heif
+- **Output:** Rich (console formatting), JSON/Markdown reports
+- **Package Manager:** pip/uv
+- **Build System:** pyproject.toml (PEP 621)
+- **Testing:** pytest (planned)
 
 ---
 
@@ -236,30 +239,89 @@ git pull origin <branch-name>
 
 ### File Organization
 
-When the codebase develops, follow these organizational principles:
+**Python Package Structure:**
 
 ```
 cull-the-herd/
-├── src/                    # Source code
-│   ├── components/         # Reusable components
-│   ├── services/           # Business logic
-│   ├── utils/              # Utility functions
-│   └── types/              # Type definitions
+├── src/
+│   └── photo_critic/       # Main package
+│       ├── __init__.py     # Package initialization
+│       ├── cli.py          # Click CLI entry point
+│       ├── discovery.py    # Image finding logic
+│       ├── prepare.py      # Image preprocessing
+│       ├── batch.py        # Anthropic batch API client
+│       └── report.py       # Output generation
 ├── tests/                  # Test files
-├── docs/                   # Documentation
-├── config/                 # Configuration files
-├── scripts/                # Build/deployment scripts
-└── public/                 # Static assets
+│   ├── __init__.py
+│   ├── test_discovery.py
+│   ├── test_prepare.py
+│   ├── test_batch.py
+│   └── test_report.py
+├── pyproject.toml          # Project metadata and dependencies
+├── README.md               # User documentation
+├── CLAUDE.md              # AI assistant guide (this file)
+├── agents.md              # Architecture documentation
+└── .gitignore             # Git ignore patterns
 ```
+
+### Python Conventions
+
+Follow **PEP 8** style guide with these specifics:
+
+1. **Type Hints:** Use type hints for all function signatures
+   ```python
+   def discover_images(path: Path, recursive: bool = False) -> list[Path]:
+       """Find all supported images in directory."""
+   ```
+
+2. **Docstrings:** Use Google-style docstrings
+   ```python
+   def process_image(path: Path) -> dict:
+       """Process a single image for batch submission.
+
+       Args:
+           path: Path to the image file
+
+       Returns:
+           Dictionary containing the batch request
+
+       Raises:
+           ValueError: If image is corrupt or unsupported
+       """
+   ```
+
+3. **Imports:** Group imports (stdlib, third-party, local)
+   ```python
+   import os
+   from pathlib import Path
+
+   from anthropic import Anthropic
+   from PIL import Image
+
+   from photo_critic.utils import resize_image
+   ```
+
+4. **Error Handling:** Be explicit about exceptions
+   - Use specific exception types
+   - Log warnings for non-critical errors (skip corrupt images)
+   - Fail fast for critical errors (API key missing, batch submission failed)
+
+5. **Line Length:** 88 characters (Black formatter default)
+
+6. **Naming:**
+   - Functions/variables: `snake_case`
+   - Classes: `PascalCase`
+   - Constants: `UPPER_SNAKE_CASE`
+   - Private: `_leading_underscore`
 
 ### Testing Standards
 
-Once testing infrastructure is established:
 - Write tests for new features
 - Update tests when changing functionality
 - Maintain test coverage above 80%
-- Run tests before committing
+- Run tests before committing: `pytest`
 - Include both unit and integration tests
+- Mock external API calls in tests
 
 ---
 
@@ -338,49 +400,129 @@ Before considering a task complete:
 
 ## Project Structure
 
-### Current Structure
+### Full Structure
 ```
 cull-the-herd/
 ├── .git/                   # Git internal directory
-├── README.md               # Project overview
-└── CLAUDE.md              # This file - AI assistant guide
+├── .gitignore              # Git ignore patterns
+├── README.md               # User-facing documentation
+├── CLAUDE.md              # This file - AI assistant guide
+├── agents.md              # Architecture documentation
+├── pyproject.toml          # Package metadata and dependencies
+├── src/
+│   └── photo_critic/       # Main package
+│       ├── __init__.py     # Package exports
+│       ├── cli.py          # CLI entry point (Click)
+│       ├── discovery.py    # Image file discovery
+│       ├── prepare.py      # Image preprocessing
+│       ├── batch.py        # Anthropic batch API client
+│       └── report.py       # Report generation
+└── tests/                  # Test suite
+    ├── __init__.py
+    ├── test_discovery.py
+    ├── test_prepare.py
+    ├── test_batch.py
+    └── test_report.py
 ```
 
-### Expected Future Structure
+### Module Responsibilities
 
-As the project develops, this section should be updated to reflect:
-- Source code organization
-- Configuration file locations
-- Test directory structure
-- Build output directories
-- Documentation organization
-- Asset locations
+#### `cli.py`
+- Entry point for `photo-critic` command
+- Argument parsing with Click
+- Orchestrates the full pipeline
+- Progress display with Rich
+
+#### `discovery.py`
+- Find image files in directory
+- Filter by extension (.jpg, .jpeg, .png, .webp, .heic)
+- Exclude thumbnails and cached files
+- Support recursive directory traversal
+
+#### `prepare.py`
+- Image preprocessing (resize, convert)
+- Base64 encoding for API
+- HEIC to JPEG conversion
+- Request formatting for batch API
+
+#### `batch.py`
+- Anthropic batch API client
+- Batch submission
+- Status polling
+- Result collection
+- Retry logic with exponential backoff
+
+#### `report.py`
+- Parse batch results
+- Generate JSON reports
+- Generate Markdown reports
+- Calculate statistics (mean score, distribution)
+- Sort and tier images by score
 
 ---
 
 ## Key Files and Directories
 
-### Current Key Files
+### Configuration Files
 
-#### README.md
-- **Purpose:** Public-facing project documentation
-- **Status:** Minimal (title only)
-- **Needs:** Expansion with project description, installation, usage
+#### `pyproject.toml`
+- **Purpose:** Package metadata, dependencies, and build configuration
+- **Format:** TOML (PEP 621)
+- **Key sections:**
+  - `[project]`: Package name, version, description, authors
+  - `[project.dependencies]`: Runtime dependencies
+  - `[project.optional-dependencies]`: Dev dependencies
+  - `[project.scripts]`: CLI entry point (`photo-critic`)
+  - `[tool.pytest]`: Test configuration
 
-#### CLAUDE.md (this file)
+#### `.gitignore`
+- **Purpose:** Exclude files from version control
+- **Excludes:**
+  - Python artifacts: `__pycache__/`, `*.pyc`, `.pytest_cache/`
+  - Virtual environments: `venv/`, `.venv/`, `env/`
+  - Build artifacts: `dist/`, `build/`, `*.egg-info/`
+  - IDE files: `.vscode/`, `.idea/`, `*.swp`
+  - Output files: `critic-report.json`, `critic-report.md`
+  - Environment: `.env`, `.env.local`
+
+### Documentation Files
+
+#### `README.md`
+- **Purpose:** User-facing documentation and installation guide
+- **Audience:** End users and contributors
+- **Contents:** Installation, usage examples, CLI options, features
+
+#### `CLAUDE.md` (this file)
 - **Purpose:** Guide for AI assistants working on this codebase
-- **Status:** Comprehensive initial version
-- **Maintenance:** Update as project evolves
+- **Audience:** Claude and other AI assistants
+- **Contents:** Architecture, conventions, workflows, guidelines
 
-### Future Key Files
+#### `agents.md`
+- **Purpose:** Detailed architecture and system design documentation
+- **Audience:** Developers and AI assistants
+- **Contents:** System overview, processing pipeline, API details, cost estimates
 
-Update this section as the project develops to include:
-- Main entry points (index.js, main.py, etc.)
-- Configuration files
-- Environment variable templates
-- Build scripts
-- Test configuration
-- CI/CD workflows
+### Environment Variables
+
+Required environment variables:
+
+```bash
+# Required: Anthropic API key
+ANTHROPIC_API_KEY=sk-ant-api03-...
+```
+
+Optional environment variables:
+
+```bash
+# Optional: Override default model
+PHOTO_CRITIC_MODEL=claude-sonnet-4-5-20250929
+
+# Optional: Default output directory
+PHOTO_CRITIC_OUTPUT_DIR=./reports
+
+# Optional: API request timeout (seconds)
+PHOTO_CRITIC_TIMEOUT=300
+```
 
 ---
 
@@ -424,7 +566,14 @@ This document should be updated when:
 
 ### Version History
 
-- **2026-01-07:** Initial version created
+- **2026-01-07 (v2):** Updated for Photo Critic project
+  - Added Python-specific conventions and type hints
+  - Documented Photo Critic architecture and purpose
+  - Added module responsibilities and structure
+  - Included environment variable documentation
+  - Added testing standards and error handling guidelines
+
+- **2026-01-07 (v1):** Initial version created
   - Documented repository state at initialization
   - Established git conventions and workflow
   - Created AI assistant guidelines
