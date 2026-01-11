@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  CLI Input  │────▶│ Batch Queue  │────▶│ Claude API  │
+│  CLI Input  │────▶│ Batch Queue  │────▶│ OpenAI API  │
 │  (folder)   │     │  (JSONL)     │     │  (Vision)   │
 └─────────────┘     └──────────────┘     └─────────────┘
                                                 │
@@ -25,7 +25,7 @@ photo-critic ./photos \
   --output results.json \
   --format markdown \
   --min-score 7.0 \
-  --model claude-sonnet-4-5-20250929 \
+  --model gpt-4o-mini \
   --dry-run
 ```
 
@@ -37,7 +37,8 @@ photo-critic ./photos \
 |`--output`, `-o`   |`./critic-report.json`      |Output file path                                |
 |`--format`, `-f`   |`json`                      |Output format: `json`, `markdown`, `both`       |
 |`--min-score`      |`0`                         |Only include images above this score            |
-|`--model`          |`claude-sonnet-4-5-20250929`|Claude model to use                             |
+|`--provider`       |`openai`                    |API provider: `openai`                          |
+|`--model`          |provider default            |Model to use (provider-specific)                |
 |`--dry-run`        |`false`                     |Show what would be processed without calling API|
 |`--max-images`     |`100`                       |Limit number of images to process               |
 |`--recursive`, `-r`|`false`                     |Include subdirectories                          |
@@ -59,14 +60,14 @@ def discover_images(path: Path, recursive: bool = False) -> list[Path]:
 ### 2. Preparation Phase
 
 ```python
-def prepare_batch(images: list[Path]) -> list[dict]:
+def prepare_batch(images: list[Path], model: str, provider: str) -> list[dict]:
     """
     Convert images to batch request format.
 
     - Resize images > 1568px on long edge (API optimization)
     - Convert HEIC to JPEG if needed
     - Base64 encode
-    - Build request with system prompt from Claude.md
+    - Build request with shared system prompt
     """
 ```
 
@@ -78,12 +79,12 @@ def prepare_batch(images: list[Path]) -> list[dict]:
 
 ### 3. Batch Submission
 
-Use Claude's Message Batches API for 50% cost savings:
+Use the OpenAI batch API:
 
 ```python
 def submit_batch(requests: list[dict]) -> str:
     """
-    Submit batch to Claude API.
+    Submit batch to selected provider API.
 
     Returns: batch_id for polling
 
@@ -124,7 +125,7 @@ def generate_report(results: list[dict], format: str) -> None:
 
 ```
 photo-critic/
-├── Claude.md              # AI instructions and criteria
+├── CLAUDE.md              # AI instructions and criteria
 ├── agents.md              # This file
 ├── pyproject.toml         # Dependencies and metadata
 ├── src/
@@ -133,7 +134,7 @@ photo-critic/
 │       ├── cli.py         # Click/Typer CLI entry point
 │       ├── discovery.py   # Image finding logic
 │       ├── prepare.py     # Image preprocessing
-│       ├── batch.py       # Anthropic batch API client
+│       ├── batch.py       # Batch API client (OpenAI)
 │       └── report.py      # Output generation
 └── tests/
     └── ...
@@ -144,10 +145,11 @@ photo-critic/
 ```toml
 [project]
 dependencies = [
-    "anthropic>=0.40.0",
     "click>=8.0",
+    "openai>=1.30.0",
     "pillow>=10.0",
     "pillow-heif>=0.18",  # HEIC support
+    "python-dotenv>=1.0.0",
     "rich>=13.0",         # Pretty console output
 ]
 ```
@@ -155,17 +157,12 @@ dependencies = [
 ## Environment
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
 ```
 
 ## Cost Estimation
 
-With batch API (50% discount):
-
-- Sonnet 4.5: ~$1.50/1M input tokens, ~$7.50/1M output tokens
-- Typical image: ~1,500 tokens input + ~300 tokens output
-- **Per image: ~$0.003-0.005**
-- **100 images: ~$0.30-0.50**
+OpenAI pricing varies by model; consult the OpenAI pricing page for estimates.
 
 ## Error Handling
 

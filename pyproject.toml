@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "photo-critic"
 version = "0.1.0"
-description = "AI-powered CLI tool for batch photo criticism using Claude's vision API"
+description = "AI-powered CLI tool for batch photo criticism using OpenAI vision APIs"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Michael Colenso", email = "github@michaelcolenso.com"}
 ]
-keywords = ["photography", "ai", "critique", "claude", "vision", "batch-processing"]
+keywords = ["photography", "ai", "critique", "openai", "vision", "batch-processing"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -27,10 +27,11 @@ classifiers = [
 ]
 
 dependencies = [
-    "anthropic>=0.40.0",
     "click>=8.0",
+    "openai>=1.30.0",
     "pillow>=10.0",
     "pillow-heif>=0.18.0",
+    "python-dotenv>=1.0.0",
     "rich>=13.0",
 ]
 

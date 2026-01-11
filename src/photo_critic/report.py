@@ -9,6 +9,48 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def _get_value(obj: Any, key: str, default: Any = None) -> Any:
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
+def _extract_text_content(content: Any) -> str | None:
+    for block in content or []:
+        if _get_value(block, "type") == "text":
+            text = _get_value(block, "text")
+            if text:
+                return text
+    return None
+
+
+def _extract_openai_text_from_choices(choices: Any) -> str | None:
+    if not isinstance(choices, list) or not choices:
+        return None
+    message = _get_value(choices[0], "message", {})
+    content = _get_value(message, "content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        for part in content:
+            if _get_value(part, "type") == "text":
+                text = _get_value(part, "text")
+                if text:
+                    return text
+    return None
+
+
+def _strip_json_fence(text_content: str) -> str:
+    text_content = text_content.strip()
+    if text_content.startswith("```json"):
+        text_content = text_content[7:]
+    if text_content.startswith("```"):
+        text_content = text_content[3:]
+    if text_content.endswith("```"):
+        text_content = text_content[:-3]
+    return text_content.strip()
+
+
 def parse_critique(result: dict[str, Any]) -> dict[str, Any] | None:
     """Parse critique from API result.
 
@@ -20,16 +62,13 @@ def parse_critique(result: dict[str, Any]) -> dict[str, Any] | None:
     """
     try:
         # Extract text content from response
-        if result["result"]["type"] == "succeeded":
-            message = result["result"]["message"]
-            content = message["content"]
+        result_obj = result["result"]
+        if _get_value(result_obj, "type") == "succeeded":
+            message = _get_value(result_obj, "message")
+            content = _get_value(message, "content", [])
 
             # Find text content
-            text_content = None
-            for block in content:
-                if block["type"] == "text":
-                    text_content = block["text"]
-                    break
+            text_content = _extract_text_content(content)
 
             if not text_content:
                 logger.warning(f"No text content in result: {result['custom_id']}")
@@ -37,21 +76,20 @@ def parse_critique(result: dict[str, Any]) -> dict[str, Any] | None:
 
             # Try to parse JSON from text
             # Handle case where response might have markdown code blocks
-            text_content = text_content.strip()
-            if text_content.startswith("```json"):
-                text_content = text_content[7:]
-            if text_content.startswith("```"):
-                text_content = text_content[3:]
-            if text_content.endswith("```"):
-                text_content = text_content[:-3]
+            critique = json.loads(_strip_json_fence(text_content))
+            return critique
 
-            critique = json.loads(text_content.strip())
+        # Fallback for OpenAI-style responses
+        choices = _get_value(result_obj, "choices")
+        text_content = _extract_openai_text_from_choices(choices)
+        if text_content:
+            critique = json.loads(_strip_json_fence(text_content))
             return critique
 
         else:
             logger.warning(
                 f"Result not succeeded: {result['custom_id']} - "
-                f"{result['result']['type']}"
+                f"{_get_value(result_obj, 'type')}"
             )
             return None
 
@@ -271,6 +309,8 @@ def generate_markdown_report(results: list[dict[str, Any]], output_path: Path) -
                     f"#### {result['filename']} - **{result['overall_score']}/10**",
                     "",
                     f"**Path:** `{result['path']}`",
+                    "",
+                    f"**Description:** {result.get('description', 'N/A')}",
                     "",
                     f"**Summary:** {result['summary']}",
                     "",

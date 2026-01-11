@@ -1,10 +1,10 @@
 # Photo Critic
 
-AI-powered CLI tool for batch photo criticism using Claude's vision API. Quickly identify your best shots from hundreds of photos with detailed, professional critiques.
+AI-powered CLI tool for batch photo criticism using OpenAI vision APIs. Quickly identify your best shots from hundreds of photos with detailed, professional critiques.
 
 ## Features
 
-- **Batch Processing**: Analyze hundreds of photos efficiently using Claude's Message Batches API (50% cost savings)
+- **Batch Processing**: Analyze hundreds of photos efficiently using the OpenAI batch API
 - **Detailed Critiques**: Get scored feedback on composition, lighting, subject matter, and technical quality
 - **Multiple Formats**: Generate reports in JSON or Markdown
 - **Smart Filtering**: Filter results by minimum score to find your best work
@@ -16,7 +16,7 @@ AI-powered CLI tool for batch photo criticism using Claude's vision API. Quickly
 ### Requirements
 
 - Python 3.11 or higher
-- Anthropic API key
+- OpenAI API key
 
 ### Install from Source
 
@@ -35,13 +35,13 @@ uv sync --dev
 ### Set up API Key
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-api03-...
+export OPENAI_API_KEY=sk-...
 ```
 
-Or create a `.env` file:
+Or create a `.env` file (auto-loaded):
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-api03-...
+OPENAI_API_KEY=sk-...
 ```
 
 ## Usage
@@ -82,8 +82,8 @@ photo-critic ./photos --max-images 50
 ### Advanced Options
 
 ```bash
-# Use a different Claude model
-photo-critic ./photos --model claude-opus-4-5-20251101
+# Use OpenAI Batch
+photo-critic ./photos --provider openai --model gpt-4o-mini
 
 # Dry run (see what would be processed)
 photo-critic ./photos --dry-run
@@ -112,7 +112,8 @@ photo-critic ./vacation-photos \
 | `--output`, `-o` | `./critic-report.json` | Output file path |
 | `--format`, `-f` | `json` | Output format: `json`, `markdown`, or `both` |
 | `--min-score` | `0.0` | Only include images above this score |
-| `--model` | `claude-sonnet-4-5-20250929` | Claude model to use |
+| `--provider` | `openai` | API provider: `openai` |
+| `--model` | provider default | Model to use (provider-specific) |
 | `--dry-run` | `false` | Show what would be processed without calling API |
 | `--max-images` | `100` | Limit number of images to process |
 | `--recursive`, `-r` | `false` | Include subdirectories |
@@ -188,14 +189,7 @@ See example output in the [reports/](reports/) directory.
 
 ## Cost Estimation
 
-Using the Message Batches API provides a 50% discount:
-
-- **Sonnet 4.5**: ~$1.50/1M input tokens, ~$7.50/1M output tokens
-- **Typical image**: ~1,500 input tokens + ~300 output tokens
-- **Per image cost**: ~$0.003-0.005
-- **100 images**: ~$0.30-0.50
-
-The CLI displays an estimated cost before submitting the batch.
+OpenAI pricing varies by model. Check the OpenAI pricing page for estimates.
 
 ## Development
 
@@ -238,7 +232,7 @@ cull-the-herd/
 │   ├── cli.py            # CLI entry point
 │   ├── discovery.py      # Image discovery
 │   ├── prepare.py        # Image preprocessing
-│   ├── batch.py          # Anthropic batch API client
+│   ├── batch.py          # Batch API client (OpenAI)
 │   └── report.py         # Report generation
 ├── tests/                # Test suite
 ├── pyproject.toml        # Package configuration
@@ -265,7 +259,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- Built with [Anthropic's Claude API](https://www.anthropic.com)
+- Built with [OpenAI's API](https://platform.openai.com)
 - CLI built with [Click](https://click.palletsprojects.com/)
 - Rich terminal output with [Rich](https://rich.readthedocs.io/)
 

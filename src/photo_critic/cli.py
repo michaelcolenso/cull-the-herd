@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import click
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -12,7 +13,7 @@ from rich.table import Table
 
 from photo_critic.batch import BatchClient
 from photo_critic.discovery import discover_images, get_image_stats
-from photo_critic.prepare import prepare_batch
+from photo_critic.prepare import DEFAULT_OPENAI_MODEL, prepare_batch
 from photo_critic.report import generate_report
 
 # Set up rich console
@@ -57,10 +58,17 @@ def setup_logging(verbose: bool = False) -> None:
     help="Only include images above this score",
 )
 @click.option(
+    "--provider",
+    type=click.Choice(["openai"], case_sensitive=False),
+    default="openai",
+    help="API provider to use (OpenAI only for now)",
+)
+@click.option(
     "--model",
     type=str,
-    default="claude-sonnet-4-5-20250929",
-    help="Claude model to use",
+    default=None,
+    show_default="provider default",
+    help="Model to use (provider-specific)",
 )
 @click.option(
     "--dry-run",
@@ -90,13 +98,14 @@ def main(
     output: Path,
     format: str,
     min_score: float,
+    provider: str,
     model: str,
     dry_run: bool,
     max_images: int,
     recursive: bool,
     verbose: bool,
 ) -> None:
-    """Photo Critic - AI-powered batch photo criticism using Claude's vision API.
+    """Photo Critic - AI-powered batch photo criticism using vision APIs.
 
     Analyze a folder of images and generate detailed critiques with scores.
 
@@ -117,10 +126,22 @@ def main(
         \b
         # Dry run to see what would be processed
         $ photo-critic ./photos --dry-run
+
+        \b
+        # Use OpenAI Batch API
+        $ photo-critic ./photos --provider openai --model gpt-4o-mini
     """
+    load_dotenv()
     setup_logging(verbose)
 
-    console.print("\n[bold cyan]Photo Critic[/bold cyan] - AI Photo Analysis\n")
+    provider = provider.lower()
+    if model is None:
+        model = DEFAULT_OPENAI_MODEL
+
+    console.print(
+        "\n[bold cyan]Photo Critic[/bold cyan] - AI Photo Analysis "
+        f"[dim]({provider})[/dim]\n"
+    )
 
     # 1. Discovery Phase
     console.print("[bold]1. Discovering images...[/bold]")
@@ -170,7 +191,9 @@ def main(
         task = progress.add_task("Processing images...", total=None)
 
         try:
-            batch_requests, image_metadata = prepare_batch(images, model=model)
+            batch_requests, image_metadata = prepare_batch(
+                images, model=model, provider=provider
+            )
         except Exception as e:
             console.print(f"[bold red]Error:[/bold red] {e}")
             sys.exit(1)
@@ -184,21 +207,15 @@ def main(
         sys.exit(0)
 
     # Estimate cost
-    avg_input_tokens = 1500
-    avg_output_tokens = 300
-    cost_per_image = (avg_input_tokens * 1.5 + avg_output_tokens * 7.5) / 1_000_000
-    estimated_cost = cost_per_image * len(batch_requests)
-
     console.print(
-        f"\n[dim]Estimated cost: ${estimated_cost:.2f} "
-        f"({len(batch_requests)} images)[/dim]"
+        "\n[dim]Estimated cost: see OpenAI pricing for your model.[/dim]"
     )
 
     # 3. Batch Submission
     console.print("\n[bold]3. Submitting batch...[/bold]")
 
     try:
-        client = BatchClient()
+        client = BatchClient(provider=provider)
         batch_id = client.submit_batch(batch_requests)
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
