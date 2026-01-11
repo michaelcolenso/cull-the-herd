@@ -83,7 +83,7 @@ def discover_images(
                 logger.info(f"Reached max_images limit: {max_images}")
                 break
 
-    except PermissionError as e:
+    except PermissionError:
         logger.error(f"Permission denied reading directory: {path}")
         raise
 
@@ -111,7 +111,9 @@ def filter_by_extension(
         extensions = SUPPORTED_EXTENSIONS
 
     # Normalize extensions to lowercase with dot
-    extensions = {ext.lower() if ext.startswith(".") else f".{ext.lower()}" for ext in extensions}
+    extensions = {
+        ext.lower() if ext.startswith(".") else f".{ext.lower()}" for ext in extensions
+    }
 
     return [img for img in images if img.suffix.lower() in extensions]
 

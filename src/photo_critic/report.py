@@ -169,16 +169,12 @@ def calculate_statistics(results: list[dict[str, Any]]) -> dict[str, Any]:
         ),
         "mean_lighting_score": round(sum(lighting_scores) / len(lighting_scores), 2),
         "mean_subject_score": round(sum(subject_scores) / len(subject_scores), 2),
-        "mean_technical_score": round(
-            sum(technical_scores) / len(technical_scores), 2
-        ),
+        "mean_technical_score": round(sum(technical_scores) / len(technical_scores), 2),
         "score_distribution": distribution,
     }
 
 
-def generate_json_report(
-    results: list[dict[str, Any]], output_path: Path
-) -> None:
+def generate_json_report(results: list[dict[str, Any]], output_path: Path) -> None:
     """Generate JSON report.
 
     Args:
@@ -207,9 +203,7 @@ def generate_json_report(
     logger.info(f"JSON report written to: {output_path}")
 
 
-def generate_markdown_report(
-    results: list[dict[str, Any]], output_path: Path
-) -> None:
+def generate_markdown_report(results: list[dict[str, Any]], output_path: Path) -> None:
     """Generate Markdown report.
 
     Args:

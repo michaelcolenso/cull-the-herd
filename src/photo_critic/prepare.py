@@ -135,38 +135,43 @@ def preprocess_image(path: Path) -> dict[str, str] | None:
             logger.warning(f"Skipping HEIC image (no support): {path}")
             return None
 
-        # Open image
-        img = Image.open(path)
+        # Open image with context manager to ensure file handle is released
+        with Image.open(path) as img:
+            # Load image data into memory before exiting context
+            # This allows the file handle to be released while we continue processing
+            img.load()
 
-        # Get original dimensions
-        original_width, original_height = img.size
+            # Get original dimensions
+            original_width, original_height = img.size
 
-        # Convert HEIC to JPEG
-        is_heic = path.suffix.lower() == ".heic"
-        if is_heic:
-            img = convert_heic_to_jpeg(img)
-            format_name = "JPEG"
-            media_type = "image/jpeg"
-        else:
-            # Determine format
-            if path.suffix.lower() in {".jpg", ".jpeg"}:
+            # Convert HEIC to JPEG
+            is_heic = path.suffix.lower() == ".heic"
+            if is_heic:
+                img = convert_heic_to_jpeg(img)
                 format_name = "JPEG"
                 media_type = "image/jpeg"
-            elif path.suffix.lower() == ".png":
-                format_name = "PNG"
-                media_type = "image/png"
-            elif path.suffix.lower() == ".webp":
-                format_name = "WEBP"
-                media_type = "image/webp"
             else:
-                format_name = "JPEG"
-                media_type = "image/jpeg"
+                # Determine format
+                if path.suffix.lower() in {".jpg", ".jpeg"}:
+                    format_name = "JPEG"
+                    media_type = "image/jpeg"
+                elif path.suffix.lower() == ".png":
+                    format_name = "PNG"
+                    media_type = "image/png"
+                elif path.suffix.lower() == ".webp":
+                    format_name = "WEBP"
+                    media_type = "image/webp"
+                else:
+                    format_name = "JPEG"
+                    media_type = "image/jpeg"
 
-        # Resize if needed
-        img = resize_image(img)
+            # Resize if needed
+            img = resize_image(img)
 
-        # Encode to base64
-        base64_image = encode_image_base64(img, format=format_name)
+            # Encode to base64
+            base64_image = encode_image_base64(img, format=format_name)
+
+            processed_width, processed_height = img.size
 
         logger.debug(f"Preprocessed successfully: {path}")
 
@@ -177,8 +182,8 @@ def preprocess_image(path: Path) -> dict[str, str] | None:
             "media_type": media_type,
             "original_width": original_width,
             "original_height": original_height,
-            "processed_width": img.size[0],
-            "processed_height": img.size[1],
+            "processed_width": processed_width,
+            "processed_height": processed_height,
         }
 
     except Exception as e:
@@ -186,9 +191,7 @@ def preprocess_image(path: Path) -> dict[str, str] | None:
         return None
 
 
-def build_batch_request(
-    image_data: dict[str, str], custom_id: str, model: str
-) -> dict:
+def build_batch_request(image_data: dict[str, str], custom_id: str, model: str) -> dict:
     """Build a single batch request for the Anthropic API.
 
     Args:
@@ -272,8 +275,6 @@ def prepare_batch(
 
         logger.info(f"Prepared: {img_path.name} ({custom_id})")
 
-    logger.info(
-        f"Prepared {len(batch_requests)} requests from {len(images)} images"
-    )
+    logger.info(f"Prepared {len(batch_requests)} requests from {len(images)} images")
 
     return batch_requests, image_metadata
