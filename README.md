@@ -46,6 +46,19 @@ OPENAI_API_KEY=sk-...
 
 ## Usage
 
+## Quickstart
+
+```bash
+# Install dependencies
+uv sync
+
+# Set your OpenAI API key
+export OPENAI_API_KEY=sk-...
+
+# Analyze a folder
+uv run photo-critic ./photos
+```
+
 ### Basic Usage
 
 ```bash
