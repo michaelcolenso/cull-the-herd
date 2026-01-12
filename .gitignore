@@ -64,6 +64,8 @@ critic-report.md
 reports/
 *.report.json
 *.report.md
+selected/
+photos/
 
 # Logs
 *.log
